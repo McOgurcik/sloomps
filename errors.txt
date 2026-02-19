@@ -2,9 +2,9 @@
 errors listed below, and try again.
 
 
-File "game/screens.rpy", line 717: keyword argument 'xalign' is incompatible with 'xpos'.
-    xalign 0.5
-          ^
+File "game/script.rpy", line 48: invalid syntax
+    default persistent.meta_upgrades = {
+                ^^^^^^^^^^
 
 Ren'Py Version: Ren'Py 8.5.2.26010301
-Thu Feb 19 23:42:24 2026
+Fri Feb 20 01:19:11 2026
