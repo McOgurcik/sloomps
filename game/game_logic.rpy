@@ -7,38 +7,61 @@ init -1 python:
     def _enemy_stat(wave, stat_key):
         B = store.ENEMY_BASE
         P = store.ENEMY_PER_WAVE
-        power = getattr(store, "ENEMY_WAVE_POWER", 1.18)
+        linear_by = getattr(store, "ENEMY_LINEAR_BY_STAT", {})
+        power_by = getattr(store, "ENEMY_POWER_BY_STAT", {})
+        early = getattr(store, "EARLY_WAVE_MULT", {}).get(min(wave, 10), 1.0)
+        monotonic_until = getattr(store, "ENEMY_WAVE_MONOTONIC_UNTIL", 30)
         base = B.get(stat_key, 0)
         per = P.get(stat_key, 0)
-        scale = math.pow(power, wave - 1) if wave > 1 else 1.0
-        return base + per * (wave - 1) * scale
+        linear_c = linear_by.get(stat_key, 0.04)
+        power_c = power_by.get(stat_key, 1.06)
+        raw = base + per * (wave - 1)
+        scale_linear = 1.0 + linear_c * (wave - 1)
+        if wave <= monotonic_until:
+            scale_power = 1.0
+        else:
+            scale_power = math.pow(power_c, wave - monotonic_until)
+        return raw * scale_linear * scale_power * early
+
+    def _apply_stat_caps(stats):
+        caps = getattr(store, "STAT_CAPS", {})
+        for stat, cap in caps.items():
+            if stat in stats:
+                stats[stat] = min(stats[stat], cap)
+        return stats
 
     def generate_enemy(wave):
         level = max(1, wave)
+        is_boss = (wave % getattr(store, "BOSS_WAVE_EVERY", 10)) == 0 and wave >= getattr(store, "BOSS_WAVE_EVERY", 10)
+        mult = getattr(store, "BOSS_STAT_MULT", 1.8) if is_boss else 1.0
         base_stats = {
-            "hp": int(_enemy_stat(wave, "hp")),
-            "defense": _enemy_stat(wave, "defense"),
-            "attack_speed": max(store.ATTACK_SPEED_MIN, _enemy_stat(wave, "attack_speed")),
-            "attack_power": _enemy_stat(wave, "attack_power"),
-            "crit_chance": _enemy_stat(wave, "crit_chance"),
-            "crit_damage": _enemy_stat(wave, "crit_damage"),
+            "hp": int(_enemy_stat(wave, "hp") * mult),
+            "defense": int(_enemy_stat(wave, "defense") * mult),
+            "attack_speed": max(store.ATTACK_SPEED_MIN, _enemy_stat(wave, "attack_speed") * mult),
+            "attack_power": int(_enemy_stat(wave, "attack_power") * mult),
+            "crit_chance": min(1.0, _enemy_stat(wave, "crit_chance") * mult),
+            "crit_damage": _enemy_stat(wave, "crit_damage") * mult,
             "vampirism": 0.0,
-            "accuracy": _enemy_stat(wave, "accuracy"),
-            "evasion": _enemy_stat(wave, "evasion"),
+            "accuracy": min(1.0, _enemy_stat(wave, "accuracy") * mult),
+            "evasion": min(1.0, _enemy_stat(wave, "evasion") * mult),
+            "regen": int(_enemy_stat(wave, "regen") * mult),
         }
-        if base_stats.get("defense") is not None and isinstance(base_stats["defense"], float):
-            base_stats["defense"] = int(base_stats["defense"])
+        base_stats = _apply_stat_caps(base_stats)
         names = ["Гнилой слизень", "Колючий черт", "Огненный шар", "Ледяная кроха", "Каменный голем"]
-        name = random.choice(names) + " (волна " + str(wave) + ")"
-        image = random.choice(store.ENEMY_IMAGES)
+        boss_names = ["Повелитель слизней", "Демон битвы", "Ледяной титан", "Огненный владыка", "Каменный страж"]
+        name = (random.choice(boss_names) if is_boss else random.choice(names)) + " (волна " + str(wave) + ")"
+        img_list = getattr(store, "BOSS_IMAGES", store.ENEMY_IMAGES) if is_boss else store.ENEMY_IMAGES
+        image = random.choice(img_list) if img_list else store.ENEMY_IMAGES[0]
         return store.Enemy(name, level, base_stats, image)
 
     def _sloomp_base_stats(level):
         B = store.SLOOMP_BASE
         P = store.SLOOMP_PER_LEVEL
+        mult_by = getattr(store, "SLOOMP_LEVEL_MULT", {})
         stats = {}
         for key in B:
-            stats[key] = B[key] + P.get(key, 0) * (level - 1)
+            lvl_mult = mult_by.get(key, 1.0)
+            stats[key] = B[key] + P.get(key, 0) * (level - 1) * lvl_mult
         return stats
 
     def generate_sloomp(level):
@@ -74,16 +97,31 @@ init -1 python:
             s, n, v = random.choice(available)
             chosen.append({
                 "stat": s,
+                "type": "stat",
                 "name": "+{} к {}".format(v, n),
                 "value": v,
                 "description": "Увеличивает {} на {}".format(n, v),
             })
             available = [(a, b, c) for a, b, c in available if a != s]
+        reroll_chance = getattr(store, "UPGRADE_REROLL_CHANCE", 0.15)
+        if chosen and random.random() < reroll_chance:
+            i = random.randint(0, len(chosen) - 1)
+            chosen[i] = {
+                "stat": None,
+                "type": "reroll",
+                "name": "+1 реролл",
+                "value": 1,
+                "description": "Добавляет 1 реролл на выбор улучшений после волны.",
+            }
         return chosen
 
     def apply_upgrade(upgrade):
-        player = persistent.current_sloomp
-        if not player:
+        if upgrade.get("type") == "reroll":
+            store.rerolls_left += upgrade.get("value", 1)
+            renpy.restart_interaction()
+            return
+        player = store.current_sloomp
+        if not player or not upgrade.get("stat"):
             return
         player.bonus_stats[upgrade["stat"]] = player.bonus_stats.get(upgrade["stat"], 0) + upgrade["value"]
         player.final_stats = player.calc_final_stats()
@@ -98,7 +136,8 @@ init -1 python:
 
     def reset_run():
         store.wave = store.WAVE_START
-        for s in persistent.sloomp_collection:
+        persistent.wave = store.WAVE_START
+        for s in store.sloomp_collection:
             s.final_stats = s.calc_final_stats()
             s.current_hp = s.final_stats["hp"]
         store.battle_aborted = False
@@ -108,7 +147,7 @@ init -1 python:
             renpy.notify("Рероллы закончились")
             return
         store.rerolls_left -= 1
-        exclude = [u["stat"] for u in store.current_upgrade_choices]
+        exclude = [u["stat"] for u in store.current_upgrade_choices if u.get("stat")]
         store.current_upgrade_choices = generate_upgrade_options(store.UPGRADE_CHOICES_COUNT, exclude_stats=exclude)
         renpy.notify("Новые варианты! Осталось рероллов: " + str(store.rerolls_left))
         renpy.restart_interaction()
@@ -119,9 +158,13 @@ init -1 python:
         store.battle_aborted = True
 
     def reset_game():
-        persistent.sloomp_collection = []
-        persistent.current_sloomp = None
+        store.sloomp_collection = []
+        store.current_sloomp = None
+        persistent.sloomp_data = []
+        persistent.current_sloomp_index = None
         persistent.gold = 0
+        persistent.in_run = False
+        persistent.wave = store.WAVE_START
         if not hasattr(persistent, "shop_bonuses"):
             persistent.shop_bonuses = {}
         store.wave = store.WAVE_START
@@ -145,7 +188,7 @@ init -1 python:
             return
         persistent.gold -= cost
         persistent.shop_bonuses[stat_name] = cur + 1
-        for s in persistent.sloomp_collection:
+        for s in store.sloomp_collection:
             s.final_stats = s.calc_final_stats()
             s.current_hp = min(s.current_hp, s.final_stats["hp"])
         if hasattr(store, "on_shop_bought"):

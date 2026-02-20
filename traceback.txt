@@ -1,7 +1,7 @@
 ﻿I'm sorry, but an uncaught exception occurred.
 
 While running game code:
-Exception: To be persisted, <store.Sloomp object at 0x0000000008a0c9e0> must support equality comparison.
+Exception: To be persisted, <store.Sloomp object at 0x00000000088eef00> must support equality comparison.
 
 -- Full Traceback ------------------------------------------------------------
 
@@ -49,9 +49,9 @@ Traceback (most recent call last):
                 ~~~~~~~~~~~~~^^^^^^^^
   File "renpy/persistent.py", line 171, in safe_deepcopy
     raise Exception("To be persisted, %r must support equality comparison." % o)
-Exception: To be persisted, <store.Sloomp object at 0x0000000008a0c9e0> must support equality comparison.
+Exception: To be persisted, <store.Sloomp object at 0x00000000088eef00> must support equality comparison.
 
 Windows-11-10.0.22631-SP0 AMD64
 Ren'Py 8.5.2.26010301
 Боевые Хлюпы 1.0
-Fri Feb 20 02:10:10 2026
+Fri Feb 20 02:31:37 2026

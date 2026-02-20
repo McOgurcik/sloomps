@@ -3,6 +3,14 @@
 init python:
     import random
     battle_victory = False
+
+    def fmt_pct(val):
+        return "{:.0f}".format(round(float(val) * 100))
+
+    def fmt_num(val):
+        if isinstance(val, float):
+            return "{:.1f}".format(round(val, 1)) if val != int(val) else str(int(val))
+        return str(int(val))
     battle_log = []
     last_enemy = None
     fusion_selected_1 = None
@@ -28,7 +36,7 @@ init python:
         level = max(1, (p1.level + p2.level) // 2)
         base_stats = store._sloomp_base_stats(level)
         bonus_stats = {}
-        stat_keys = ["hp", "defense", "attack_speed", "attack_power", "crit_chance", "crit_damage", "vampirism", "accuracy", "evasion"]
+        stat_keys = ["hp", "defense", "attack_speed", "attack_power", "crit_chance", "crit_damage", "vampirism", "accuracy", "evasion", "regen"]
         for key in stat_keys:
             choice = random.randint(0, 2)
             if choice == 0:
@@ -66,11 +74,11 @@ init python:
         new_sloomp.bonus_stats = bonus_stats
         new_sloomp.final_stats = new_sloomp.calc_final_stats()
         new_sloomp.current_hp = new_sloomp.final_stats["hp"]
-        persistent.sloomp_collection.remove(p1)
-        persistent.sloomp_collection.remove(p2)
-        persistent.sloomp_collection.append(new_sloomp)
-        if persistent.current_sloomp in (p1, p2):
-            persistent.current_sloomp = new_sloomp
+        store.sloomp_collection.remove(p1)
+        store.sloomp_collection.remove(p2)
+        store.sloomp_collection.append(new_sloomp)
+        if store.current_sloomp in (p1, p2):
+            store.current_sloomp = new_sloomp
         fusion_selected_1 = None
         fusion_selected_2 = None
         if hasattr(store, "on_collection_changed"):
@@ -79,9 +87,9 @@ init python:
         renpy.restart_interaction()
 
     def add_sloomp_to_collection(sloomp):
-        persistent.sloomp_collection.append(sloomp)
-        if persistent.current_sloomp is None:
-            persistent.current_sloomp = sloomp
+        store.sloomp_collection.append(sloomp)
+        if store.current_sloomp is None:
+            store.current_sloomp = sloomp
         if hasattr(store, "on_collection_changed"):
             store.on_collection_changed()
 
@@ -107,7 +115,7 @@ init python:
         global battle_active, battle_finished, last_player_attack_time, last_enemy_attack_time, hit_effect_target, hit_effect_type, hit_effect_timer, battle_victory, last_enemy
         if not battle_active:
             return
-        player = persistent.current_sloomp
+        player = store.current_sloomp
         enemy = current_enemy
         if player is None or enemy is None:
             battle_active = False
@@ -122,6 +130,13 @@ init python:
             battle_active = False
             battle_finished = True
             return
+        tick = getattr(store, "BATTLE_TICK_INTERVAL", 0.05)
+        player_regen = player.final_stats.get("regen", 0) * tick
+        if player_regen > 0:
+            player.current_hp = min(player.current_hp + int(player_regen), player.final_stats["hp"])
+        enemy_regen = enemy.final_stats.get("regen", 0) * tick
+        if enemy_regen > 0:
+            enemy.current_hp = min(enemy.current_hp + int(enemy_regen), enemy.final_stats["hp"])
         player_speed = max(min_speed, player.final_stats["attack_speed"])
         if current_time - last_player_attack_time >= 1.0 / player_speed:
             last_player_attack_time = current_time
@@ -194,13 +209,14 @@ screen main_menu():
             spacing 20
             text "БОЕВЫЕ ХЛЮПЫ" size 48 color "#FFFFFF" xalign 0.5
             text "Волна: [wave]" size 24 xalign 0.5
-            if battle_aborted:
+            if persistent.in_run:
                 textbutton "Продолжить" action Jump("start_battle") xminimum 250
             else:
                 textbutton "Начать игру" action Jump("start_battle") xminimum 250
             textbutton "Мои хлюпы" action ShowMenu("collection") xminimum 250
             textbutton "Слияние" action ShowMenu("fusion_simple") xminimum 250
             textbutton "Магазин" action ShowMenu("shop") xminimum 250
+            textbutton "Сохранить" action Function(save_game) xminimum 250
             textbutton "Новая игра" action [Function(reset_game), Jump("start")] xminimum 250
             textbutton "Выход" action Quit() xminimum 250
             null height 20
@@ -209,7 +225,7 @@ screen main_menu():
 screen choose_upgrade():
     modal True
     add "images/gui/choose_bg.png"
-    $ player = persistent.current_sloomp
+    $ player = current_sloomp
     frame:
         xalign 0.5
         yalign 0.5
@@ -223,9 +239,7 @@ screen choose_upgrade():
             xalign 0.5
             spacing 20
             use sloomp_display(player, (120, 120))
-            vbox:
-                text "[player.name]" size 24
-                text "❤️ HP: [player.current_hp]/[player.final_stats['hp']]" size 18
+            use sloomp_stats_full(player)
         null height 15
         text "Рероллов: [rerolls_left]" size 20 xalign 0.5
         hbox:
@@ -239,13 +253,13 @@ screen choose_upgrade():
             spacing 40
             for upgrade in current_upgrade_choices:
                 frame:
-                    xysize (260, 380)
+                    xysize (280, 380)
                     background "#ffa3a3"
                     has vbox
                     text upgrade["name"] size 20 xalign 0.5
-                    text upgrade["description"] size 16
+                    text upgrade["description"] size 14
                     null height 20
-                    textbutton "ВЫБРАТЬ" action [Function(apply_upgrade, upgrade), Hide("choose_upgrade"), Jump("after_upgrade")] xalign 0.5 xminimum 200
+                    textbutton "ВЫБРАТЬ" action If(upgrade.get("type") == "reroll", [Function(apply_upgrade, upgrade), Function(renpy.restart_interaction)], [Function(apply_upgrade, upgrade), Hide("choose_upgrade"), Jump("after_upgrade")]) xalign 0.5 xminimum 200
         if len(current_upgrade_choices) < 3:
             text "Выбери одно улучшение" size 18 color "#444" xalign 0.5
 
@@ -255,15 +269,13 @@ screen collection():
         vbox:
             spacing 10
             textbutton "← Назад" action Return() xminimum 120
-            if persistent.current_sloomp:
+            if current_sloomp:
                 frame:
                     xfill True
                     has hbox
-                    use sloomp_display(persistent.current_sloomp, (120, 120))
-                    vbox:
-                        text "[persistent.current_sloomp.name]" size 20
-                        text "❤️ [persistent.current_sloomp.current_hp]/[persistent.current_sloomp.final_stats['hp']]" size 16
-                    textbutton "Подробнее" action ShowMenu("sloomp_detail", persistent.current_sloomp) xminimum 120
+                    use sloomp_display(current_sloomp, (120, 120))
+                    use sloomp_stats_full(current_sloomp)
+                    textbutton "Подробнее" action ShowMenu("sloomp_detail", current_sloomp) xminimum 120
             null height 20
             text "Все хлюпы:" size 24
             viewport:
@@ -271,15 +283,15 @@ screen collection():
                 mousewheel True
                 ysize 400
                 vbox:
-                    for sloomp in persistent.sloomp_collection:
+                    for sloomp in sloomp_collection:
                         frame:
                             xfill True
                             has hbox
                             use sloomp_display(sloomp, (60, 60))
                             vbox:
                                 text "[sloomp.name]" size 18
-                            if sloomp != persistent.current_sloomp:
-                                textbutton "Выбрать" action [SetField(persistent, "current_sloomp", sloomp), Return()] xminimum 100
+                            if sloomp != current_sloomp:
+                                textbutton "Выбрать" action [SetField(store, "current_sloomp", sloomp), Function(sync_sloomp_to_persistent), Return()] xminimum 100
                             else:
                                 text "АКТИВЕН" size 16
 
@@ -293,30 +305,24 @@ screen fusion_simple():
                 xalign 0.5
                 spacing 100
                 frame:
-                    xysize (350, 500)
+                    xysize (380, 620)
                     background "#442266"
                     has vbox
                     if fusion_selected_1:
-                        use sloomp_display(fusion_selected_1, (200, 200))
+                        use sloomp_display(fusion_selected_1, (180, 180))
                         text "[fusion_selected_1.name]" size 18 xalign 0.5
-                        $ s1 = fusion_selected_1.final_stats
-                        text "❤️ HP: [s1['hp']]" size 14
-                        text "⚔️ Атака: [s1['attack_power']]" size 14
-                        text "🛡️ Защита: [s1['defense']]" size 14
+                        use sloomp_stats_full(fusion_selected_1)
                         textbutton "Снять выбор" action Function(clear_fusion_slot_1) xalign 0.5 xminimum 120
                     else:
                         text "Выберите первого хлюпа" size 18 xalign 0.5 yalign 0.5
                 frame:
-                    xysize (350, 500)
+                    xysize (380, 620)
                     background "#442266"
                     has vbox
                     if fusion_selected_2:
-                        use sloomp_display(fusion_selected_2, (200, 200))
+                        use sloomp_display(fusion_selected_2, (180, 180))
                         text "[fusion_selected_2.name]" size 18 xalign 0.5
-                        $ s2 = fusion_selected_2.final_stats
-                        text "❤️ HP: [s2['hp']]" size 14
-                        text "⚔️ Атака: [s2['attack_power']]" size 14
-                        text "🛡️ Защита: [s2['defense']]" size 14
+                        use sloomp_stats_full(fusion_selected_2)
                         textbutton "Снять выбор" action Function(clear_fusion_slot_2) xalign 0.5 xminimum 120
                     else:
                         text "Выберите второго хлюпа" size 18 xalign 0.5 yalign 0.5
@@ -332,7 +338,7 @@ screen fusion_simple():
                 mousewheel True
                 ysize 300
                 vbox:
-                    for sloomp in persistent.sloomp_collection:
+                    for sloomp in sloomp_collection:
                         frame:
                             xfill True
                             has hbox
@@ -352,22 +358,54 @@ screen sloomp_detail(sloomp):
             use sloomp_display(sloomp, (250, 250))
             text "Имя: [sloomp.name]" size 22
             null height 10
+            text "Уровень: [sloomp.level]  Опыт: [sloomp.exp]/[sloomp.exp_to_next]" size 18
+            null height 10
             text "Характеристики:" size 20
-            text "  ❤️ HP: [sloomp.final_stats['hp']]" size 18
-            text "  🛡️ Защита: [sloomp.final_stats['defense']]" size 18
-            text "  ⚡ Скорость атаки: [sloomp.final_stats['attack_speed']]" size 18
-            text "  ⚔️ Сила атаки: [sloomp.final_stats['attack_power']]" size 18
-            text "  🎯 Шанс крита: [sloomp.final_stats['crit_chance']*100]%" size 18
-            text "  💥 Крит урон: [sloomp.final_stats['crit_damage']*100]%" size 18
-            text "  💉 Вампиризм: [sloomp.final_stats['vampirism']*100]%" size 18
-            text "  🎲 Точность: [sloomp.final_stats['accuracy']*100]%" size 18
-            text "  🌀 Уклонение: [sloomp.final_stats['evasion']*100]%" size 18
+            text "  ❤️ HP: [sloomp.current_hp]/[sloomp.final_stats['hp']]" size 18
+            text "  🛡️ Защита: [fmt_num(sloomp.final_stats['defense'])]" size 18
+            text "  ⚡ Скорость: [fmt_num(sloomp.final_stats['attack_speed'])]" size 18
+            text "  ⚔️ Атака: [fmt_num(sloomp.final_stats['attack_power'])]" size 18
+            text "  🎯 Крит: [fmt_pct(sloomp.final_stats['crit_chance'])]%" size 18
+            text "  💥 Крит.урон: [fmt_pct(sloomp.final_stats['crit_damage'])]%" size 18
+            text "  💉 Вампиризм: [fmt_pct(sloomp.final_stats['vampirism'])]%" size 18
+            text "  🎲 Точность: [fmt_pct(sloomp.final_stats['accuracy'])]%" size 18
+            text "  🌀 Уклонение: [fmt_pct(sloomp.final_stats['evasion'])]%" size 18
+            text "  💚 Восст. HP: [fmt_num(sloomp.final_stats.get('regen', 0))]/сек" size 18
             null height 10
             text "Особенности:" size 20
             for feat in sloomp.features:
                 text "  • [feat['display_name']] ([feat['type']])" size 16
             null height 20
             textbutton "Назад" action Return() xminimum 120
+
+screen sloomp_stats_full(sloomp):
+    vbox:
+        spacing 2
+        text "Ур. [sloomp.level]  Опыт: [sloomp.exp]/[sloomp.exp_to_next]" size 14
+        text "❤️ HP: [sloomp.current_hp]/[sloomp.final_stats['hp']]" size 14
+        text "🛡️ Защита: [fmt_num(sloomp.final_stats['defense'])]" size 14
+        text "⚔️ Атака: [fmt_num(sloomp.final_stats['attack_power'])]" size 14
+        text "⚡ Скорость: [fmt_num(sloomp.final_stats['attack_speed'])]" size 14
+        text "🎯 Крит: [fmt_pct(sloomp.final_stats['crit_chance'])]%" size 14
+        text "💥 Крит.урон: [fmt_pct(sloomp.final_stats['crit_damage'])]%" size 14
+        text "💉 Вампиризм: [fmt_pct(sloomp.final_stats['vampirism'])]%" size 14
+        text "🎲 Точность: [fmt_pct(sloomp.final_stats['accuracy'])]%" size 14
+        text "🌀 Уклонение: [fmt_pct(sloomp.final_stats['evasion'])]%" size 14
+        text "💚 Восст. HP: [fmt_num(sloomp.final_stats.get('regen', 0))]/сек" size 14
+
+screen enemy_stats_full(enemy):
+    vbox:
+        spacing 2
+        text "[enemy.name]" size 14
+        text "❤️ HP: [enemy.current_hp]/[enemy.final_stats['hp']]" size 14
+        text "🛡️ Защита: [fmt_num(enemy.final_stats['defense'])]" size 14
+        text "⚔️ Атака: [fmt_num(enemy.final_stats['attack_power'])]" size 14
+        text "⚡ Скорость: [fmt_num(enemy.final_stats['attack_speed'])]" size 14
+        text "🎯 Крит: [fmt_pct(enemy.final_stats['crit_chance'])]%" size 14
+        text "💥 Крит.урон: [fmt_pct(enemy.final_stats['crit_damage'])]%" size 14
+        text "🎲 Точность: [fmt_pct(enemy.final_stats['accuracy'])]%" size 14
+        text "🌀 Уклонение: [fmt_pct(enemy.final_stats['evasion'])]%" size 14
+        text "💚 Восст. HP: [fmt_num(enemy.final_stats.get('regen', 0))]/сек" size 14
 
 screen sloomp_display(sloomp, size=(100, 100)):
     fixed:
@@ -392,8 +430,16 @@ screen sloomp_display(sloomp, size=(100, 100)):
 screen battle_animation():
     modal True
     add "images/gui/battle_bg.png"
-    $ player = persistent.current_sloomp
+    $ player = current_sloomp
     $ enemy = current_enemy
+    frame:
+        xalign 0.0
+        yalign 0.0
+        xoffset 20
+        yoffset 20
+        background "#000000AA"
+        padding (12, 8)
+        text "Волна [wave]" size 28 color "#FFF"
     fixed:
         xpos 400
         ypos 300
@@ -409,17 +455,18 @@ screen battle_animation():
     fixed:
         xpos 1200
         ypos 300
-        add enemy.image xysize (300, 300)
+        xsize 300
+        ysize 380
         vbox:
-            ypos 320
-            xalign 0.5
-            text "[enemy.name]" size 24
+            spacing 4
+            text "[enemy.name]" size 20 xalign 0.5
             bar:
                 value enemy.current_hp
                 range enemy.final_stats["hp"]
-                xmaximum 300
-                ymaximum 25
-            text "❤️ [enemy.current_hp]/[enemy.final_stats['hp']]" size 16 xalign 0.5
+                xmaximum 280
+                ymaximum 22
+            text "❤️ [enemy.current_hp]/[enemy.final_stats['hp']]" size 14 xalign 0.5
+        add enemy.image ypos 75 xysize (300, 300)
     if hit_effect_target == "enemy":
         fixed:
             xpos 1200
@@ -437,12 +484,15 @@ screen battle_animation():
         yoffset -20
         background "#000000AA"
         padding (15, 10)
-        has vbox
-        text "⚔️ Атака: [player.final_stats['attack_power']]" size 16
-        text "🛡️ Защита: [player.final_stats['defense']]" size 16
-        text "⚡ Скорость: [player.final_stats['attack_speed']]" size 16
-        text "🎯 Крит: [player.final_stats['crit_chance']*100]%" size 16
-        text "💉 Вампиризм: [player.final_stats['vampirism']*100]%" size 16
+        use sloomp_stats_full(player)
+    frame:
+        xalign 1.0
+        yalign 1.0
+        xoffset -20
+        yoffset -20
+        background "#000000AA"
+        padding (15, 10)
+        use enemy_stats_full(enemy)
     timer 0.05 repeat True action Function(battle_tick)
     frame:
         xalign 0.5
@@ -507,7 +557,8 @@ screen shop():
                 ("💥 Крит. урон", "crit_damage"),
                 ("💉 Вампиризм", "vampirism"),
                 ("🎲 Точность", "accuracy"),
-                ("🌀 Уклонение", "evasion")
+                ("🌀 Уклонение", "evasion"),
+                ("💚 Восст. HP", "regen")
             ]
             for label, stat in stats_list:
                 frame:
@@ -534,25 +585,22 @@ screen choose_sloomp(title, sloomps, after_battle=False):
     frame:
         xalign 0.5
         yalign 0.5
-        xsize 1200
-        ysize 800
+        xsize 1280
+        ysize 820
         background "#7c6e6e"
         has vbox
         text title size 40 xalign 0.5
-        null height 20
+        null height 15
         hbox:
             xalign 0.5
-            spacing 40
+            spacing 30
             for sloomp in sloomps:
                 frame:
-                    xysize (300, 560)
+                    xysize (380, 680)
                     background "#332929"
                     has vbox
                     use sloomp_display(sloomp, (200, 200))
                     text "[sloomp.name]" size 18 xalign 0.5
-                    text "❤️ HP: [sloomp.final_stats['hp']]" size 14
-                    text "⚔️ Атака: [sloomp.final_stats['attack_power']]" size 14
-                    text "🛡️ Защита: [sloomp.final_stats['defense']]" size 14
-                    text "⚡ Скорость: [sloomp.final_stats['attack_speed']]" size 14
+                    use sloomp_stats_full(sloomp)
                     null height 10
                     textbutton "ВЫБРАТЬ" action [Function(add_sloomp_to_collection, sloomp), Hide("choose_sloomp"), Jump("after_choice_battle" if after_battle else "after_choice")] xalign 0.5 xminimum 200

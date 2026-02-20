@@ -1,135 +1,29 @@
-2026-02-19 23:10:09 UTC
+2026-02-20 00:18:38 UTC
 Windows-11-10.0.22631-SP0
 Ren'Py 8.5.2.26010301
 
-Early init took 30 ms
-Loading error handling took 14 ms
-Loading script took 54 ms
-Loading persistent.
-Traceback (most recent call last):
-  File "D:\renpy-8.0.0-sdk\renpy\persistent.py", line 237, in load
-    persistent = loads(s)
-                 ^^^^^^^^
-  File "D:\renpy-8.0.0-sdk\renpy\compat\pickle.py", line 296, in loads
-    return load(io.BytesIO(s))
-           ^^^^^^^^^^^^^^^^^^^
-  File "D:\renpy-8.0.0-sdk\renpy\compat\pickle.py", line 288, in load
-    return Unpickler(f, fix_imports=True, encoding="utf-8", errors="surrogateescape").load()
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "D:\renpy-8.0.0-sdk\renpy\compat\pickle.py", line 280, in find_class
-    return super().find_class(module, name)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-AttributeError: Can't get attribute 'Sloomp' on <renpy.python.StoreModule object at 0x0000000006830e00>
-Loading persistent.
-Traceback (most recent call last):
-  File "D:\renpy-8.0.0-sdk\renpy\persistent.py", line 237, in load
-    persistent = loads(s)
-                 ^^^^^^^^
-  File "D:\renpy-8.0.0-sdk\renpy\compat\pickle.py", line 296, in loads
-    return load(io.BytesIO(s))
-           ^^^^^^^^^^^^^^^^^^^
-  File "D:\renpy-8.0.0-sdk\renpy\compat\pickle.py", line 288, in load
-    return Unpickler(f, fix_imports=True, encoding="utf-8", errors="surrogateescape").load()
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "D:\renpy-8.0.0-sdk\renpy\compat\pickle.py", line 280, in find_class
-    return super().find_class(module, name)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-AttributeError: Can't get attribute 'Sloomp' on <renpy.python.StoreModule object at 0x0000000006830e00>
-Loading persistent.
-Traceback (most recent call last):
-  File "D:\renpy-8.0.0-sdk\renpy\persistent.py", line 237, in load
-    persistent = loads(s)
-                 ^^^^^^^^
-  File "D:\renpy-8.0.0-sdk\renpy\compat\pickle.py", line 296, in loads
-    return load(io.BytesIO(s))
-           ^^^^^^^^^^^^^^^^^^^
-  File "D:\renpy-8.0.0-sdk\renpy\compat\pickle.py", line 288, in load
-    return Unpickler(f, fix_imports=True, encoding="utf-8", errors="surrogateescape").load()
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "D:\renpy-8.0.0-sdk\renpy\compat\pickle.py", line 280, in find_class
-    return super().find_class(module, name)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-AttributeError: Can't get attribute 'Sloomp' on <renpy.python.StoreModule object at 0x0000000006830e00>
-Loading save slot metadata took 17 ms
-Loading persistent took 1 ms
-Running init code took 27 ms
-Loading analysis data took 3 ms
-Analyze and compile ATL took 1 ms
-Reloading save slot metadata took 6 ms
-Dump and make backups took 30 ms
+Early init took 31 ms
+Loading error handling took 91 ms
+Loading script took 593 ms
+Loading save slot metadata took 13 ms
+Loading persistent took 0 ms
+Running init code took 80 ms
+Loading analysis data took 0 ms
+Analyze and compile ATL took 3 ms
+Reloading save slot metadata took 4 ms
+Backing up script files to 'C:\\Users\\Администратор\\AppData\\Roaming/RenPy/backups\\sloomps':
+Dump and make backups took 31 ms
 Cleaning cache took 0 ms
-Making clean stores took 1 ms
-Initial gc took 32 ms
+Making clean stores took 0 ms
+Initial gc took 34 ms
 DPI scale factor: 1.000000
 nvdrs: Loaded, about to disable thread optimizations.
 nvdrs: b"Couldn't load nvlib." (can be ignored)
 Creating interface object took 1 ms
 Init translation took 0 ms
 Cleaning stores took 0 ms
-Load screen analysis took 16 ms
-Analyze screens took 1 ms
-Save screen analysis took 0 ms
-Save pyanalysis took 0 ms
+Load screen analysis took 0 ms
+Analyze screens took 25 ms
+Save screen analysis took 11 ms
+Save pyanalysis took 3 ms
 Save bytecode took 0 ms
-Running _start took 1 ms
-Interface start took 164 ms
-
-Initializing gl2 renderer:
-primary display bounds: (0, 0, 1920, 1080)
-swap interval: 1 frames
-Windowed mode.
-Vendor: 'ATI Technologies Inc.'
-Renderer: 'AMD Radeon RX 6700 XT'
-Version: '4.6.0 Compatibility Profile Context 24.5.1.240502'
-Display Info: <Info({'bitsize': 32, 'bytesize': 4, 'masks': (16711680, 65280, 255, 0), 'shifts': (16, 8, 0, 0), 'losses': (0, 0, 0, 8), 'current_w': 1920, 'current_h': 1080, 'refresh_rate': 60, 'hw': False, 'wm': True, 'video_mem': 268435456, 'blit_hw': False, 'blit_hw_CC': False, 'blit_hw_A': False, 'blit_sw': False, 'blit_sw_CC': False, 'blit_sw_A': False})>
-Screen sizes: virtual=(1920, 1080) physical=(1739, 978) drawable=(1739, 978)
-Maximum texture size: 4096x4096
-
-Full traceback:
-  File "renpy/common/_layout/screen_main_menu.rpym", line 28, in script
-    python hide:
-  File "renpy/ast.py", line 1187, in execute
-    renpy.python.py_exec_bytecode(self.code.bytecode, self.hide, store=self.store)
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "renpy/python.py", line 1273, in py_exec_bytecode
-    exec(bytecode, globals, locals)
-    ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "renpy/common/_layout/screen_main_menu.rpym", line 28, in <module>
-    python hide:
-  File "renpy/common/_layout/screen_main_menu.rpym", line 35, in _execute_python_hide
-    ui.interact()
-    ~~~~~~~~~~~^^
-  File "renpy/ui.py", line 306, in interact
-    rv = renpy.game.interface.interact(roll_forward=roll_forward, **kwargs)
-         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "renpy/display/core.py", line 2154, in interact
-    repeat, rv = self.interact_core(
-                 ~~~~~~~~~~~~~~~~~~^
-        preloads=preloads,
-        ^^^^^^^^^^^^^^^^^^
-    ...<4 lines>...
-        **kwargs,
-        ^^^^^^^^^
-    )
-    ^
-  File "renpy/display/core.py", line 2996, in interact_core
-    self.idle_frame(expensive)
-    ~~~~~~~~~~~~~~~^^^^^^^^^^^
-  File "renpy/display/core.py", line 2312, in idle_frame
-    renpy.persistent.check_update()
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
-  File "renpy/persistent.py", line 425, in check_update
-    update()
-    ~~~~~~^^
-  File "renpy/persistent.py", line 456, in update
-    merge(other)
-    ~~~~~^^^^^^^
-  File "renpy/persistent.py", line 405, in merge
-    backup[f] = safe_deepcopy(val, f)
-                ~~~~~~~~~~~~~^^^^^^^^
-  File "renpy/persistent.py", line 171, in safe_deepcopy
-    raise Exception("To be persisted, %r must support equality comparison." % o)
-Exception: To be persisted, <store.Sloomp object at 0x0000000008a0c9e0> must support equality comparison.
-
-While running game code:
-Exception: To be persisted, <store.Sloomp object at 0x0000000008a0c9e0> must support equality comparison.

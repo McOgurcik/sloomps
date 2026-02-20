@@ -30,16 +30,19 @@ init -1 python:
             multiplier = {
                 "hp": 1.0, "defense": 1.0, "attack_speed": 1.0, "attack_power": 1.0,
                 "crit_chance": 1.0, "crit_damage": 1.0, "vampirism": 1.0,
-                "accuracy": 1.0, "evasion": 1.0
+                "accuracy": 1.0, "evasion": 1.0, "regen": 1.0
             }
             for feat in self.features:
                 for stat, mult in feat.get("multipliers", {}).items():
                     multiplier[stat] *= mult
             final = {}
+            caps = getattr(store, "STAT_CAPS", {})
             for stat, val in raw_stats.items():
                 final[stat] = val * multiplier.get(stat, 1.0)
-                if stat in ["hp", "defense", "attack_power"]:
+                if stat in ["hp", "defense", "attack_power", "regen"]:
                     final[stat] = int(final[stat])
+                if stat in caps:
+                    final[stat] = min(final[stat], caps[stat])
             return final
 
         def level_up(self):
@@ -48,7 +51,7 @@ init -1 python:
             for key, delta in B.items():
                 self.base_stats[key] = self.base_stats.get(key, 0) + delta
             self.final_stats = self.calc_final_stats()
-            self.current_hp = self.final_stats["hp"]
+            self.current_hp = min(self.current_hp, self.final_stats["hp"])
             self.exp_to_next = store.SLOOMP_EXP_BASE + store.SLOOMP_EXP_PER_LEVEL * self.level
 
         def add_exp(self, amount):
@@ -98,6 +101,14 @@ init -1 python:
             self.exp_to_next = o.exp_to_next
             self.final_stats = o.calc_final_stats()
             self.current_hp = min(o.current_hp, self.final_stats["hp"])
+
+        def __eq__(self, other):
+            if not isinstance(other, Sloomp):
+                return False
+            return self is other
+
+        def __hash__(self):
+            return id(self)
 
     class Enemy:
         def __init__(self, name, level, base_stats, image):
