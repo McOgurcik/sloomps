@@ -53,8 +53,10 @@ init -2 python:
         "crit_chance": 1.0, "crit_damage": 1.0, "vampirism": 1.0,
         "accuracy": 1.0, "evasion": 1.0, "regen": 1.0,
     }
-    SLOOMP_EXP_BASE = 100
-    SLOOMP_EXP_PER_LEVEL = 100
+    SLOOMP_EXP_BASE = 80
+    SLOOMP_EXP_PER_LEVEL = 80
+    SLOOMP_LEVEL_POWER_MIN = 0.35
+    SLOOMP_LEVEL_POWER_MAX_LEVEL = 20
 
     # --- Враг: база и прирост за волну; первые 30 волн — только линейный рост (монотонно), с 31-й — степенной ---
     ENEMY_WAVE_MONOTONIC_UNTIL = 30
@@ -138,6 +140,144 @@ init -2 python:
         "crit_chance": 0.015, "crit_damage": 0.05, "vampirism": 0.01,
         "accuracy": 0.02, "evasion": 0.02, "regen": 100,
     }
+
+    # --- Яйца хлюпов (кейсы с разной редкостью) ---
+    EGG_TYPES = [
+        {
+            "id": "common",
+            "name": "Простое яйцо",
+            "description": "Недорогое яйцо, даёт хлюпов начального уровня с 2–4 особенностями.",
+            "price": 60,
+            "level": SLOOMP_CHOICE_LEVEL + 10,
+            "level_spread": 2,
+            "roll_count": 10,
+        },
+        {
+            "id": "rare",
+            "name": "Редкое яйцо",
+            "description": "Хлюпы выше уровнем и с большим количеством особенностей.",
+            "price": 150,
+            "level": SLOOMP_CHOICE_LEVEL + 30,
+            "level_spread": 4,
+            "roll_count": 12,
+        },
+        {
+            "id": "mythic",
+            "name": "Мифическое яйцо",
+            "description": "Очень редкие хлюпы с максимальным числом особенностей.",
+            "price": 320,
+            "level": SLOOMP_CHOICE_LEVEL + 50,
+            "level_spread": 5,
+            "roll_count": 15,
+        },
+    ]
+    
+    # --- Типы врагов ---
+    ENEMY_TYPES = [
+        {
+            "id": "slime",
+            "name": "Гнилой слизень",
+            "image": "images/enemies/enemy1.png",
+            "stat_multipliers": {
+                "hp": 1.0, "defense": 1.0, "attack_speed": 1.0, "attack_power": 1.0,
+                "crit_chance": 1.0, "crit_damage": 1.0, "vampirism": 1.0,
+                "accuracy": 1.0, "evasion": 1.0, "regen": 1.0,
+            },
+        },
+        {
+            "id": "spike",
+            "name": "Колючий черт",
+            "image": "images/enemies/enemy2.png",
+            "stat_multipliers": {
+                "hp": 0.9, "defense": 1.1, "attack_speed": 1.1, "attack_power": 1.0,
+                "crit_chance": 1.2, "crit_damage": 1.0, "vampirism": 1.0,
+                "accuracy": 1.0, "evasion": 0.9, "regen": 1.0,
+            },
+        },
+        {
+            "id": "fire",
+            "name": "Огненный шар",
+            "image": "images/enemies/enemy1.png",
+            "stat_multipliers": {
+                "hp": 0.95, "defense": 0.9, "attack_speed": 1.0, "attack_power": 1.15,
+                "crit_chance": 1.0, "crit_damage": 1.1, "vampirism": 1.0,
+                "accuracy": 1.0, "evasion": 1.0, "regen": 0.5,
+            },
+        },
+        {
+            "id": "ice",
+            "name": "Ледяная кроха",
+            "image": "images/enemies/enemy2.png",
+            "stat_multipliers": {
+                "hp": 1.1, "defense": 1.15, "attack_speed": 0.85, "attack_power": 0.9,
+                "crit_chance": 0.9, "crit_damage": 1.0, "vampirism": 1.0,
+                "accuracy": 1.0, "evasion": 1.1, "regen": 1.2,
+            },
+        },
+        {
+            "id": "stone",
+            "name": "Каменный голем",
+            "image": "images/enemies/enemy1.png",
+            "stat_multipliers": {
+                "hp": 1.3, "defense": 1.25, "attack_speed": 0.75, "attack_power": 1.05,
+                "crit_chance": 0.8, "crit_damage": 1.0, "vampirism": 1.0,
+                "accuracy": 0.95, "evasion": 0.7, "regen": 0.8,
+            },
+        },
+    ]
+    
+    BOSS_ENEMY_TYPES = [
+        {
+            "id": "boss_slime",
+            "name": "Повелитель слизней",
+            "image": "images/enemies/boss1.png",
+            "stat_multipliers": {
+                "hp": 1.0, "defense": 1.0, "attack_speed": 1.0, "attack_power": 1.0,
+                "crit_chance": 1.0, "crit_damage": 1.0, "vampirism": 1.0,
+                "accuracy": 1.0, "evasion": 1.0, "regen": 1.0,
+            },
+        },
+        {
+            "id": "boss_demon",
+            "name": "Демон битвы",
+            "image": "images/enemies/boss1.png",
+            "stat_multipliers": {
+                "hp": 0.95, "defense": 0.9, "attack_speed": 1.2, "attack_power": 1.15,
+                "crit_chance": 1.3, "crit_damage": 1.2, "vampirism": 1.0,
+                "accuracy": 1.1, "evasion": 1.1, "regen": 0.8,
+            },
+        },
+        {
+            "id": "boss_ice",
+            "name": "Ледяной титан",
+            "image": "images/enemies/boss1.png",
+            "stat_multipliers": {
+                "hp": 1.2, "defense": 1.3, "attack_speed": 0.8, "attack_power": 0.95,
+                "crit_chance": 0.9, "crit_damage": 1.0, "vampirism": 1.0,
+                "accuracy": 1.0, "evasion": 1.0, "regen": 1.5,
+            },
+        },
+        {
+            "id": "boss_fire",
+            "name": "Огненный владыка",
+            "image": "images/enemies/boss1.png",
+            "stat_multipliers": {
+                "hp": 0.9, "defense": 0.85, "attack_speed": 1.1, "attack_power": 1.25,
+                "crit_chance": 1.1, "crit_damage": 1.3, "vampirism": 1.0,
+                "accuracy": 1.05, "evasion": 0.95, "regen": 0.6,
+            },
+        },
+        {
+            "id": "boss_stone",
+            "name": "Каменный страж",
+            "image": "images/enemies/boss1.png",
+            "stat_multipliers": {
+                "hp": 1.4, "defense": 1.4, "attack_speed": 0.7, "attack_power": 1.1,
+                "crit_chance": 0.85, "crit_damage": 1.0, "vampirism": 1.0,
+                "accuracy": 0.9, "evasion": 0.6, "regen": 1.0,
+            },
+        },
+    ]
 
     # --- Бой (regen применяется каждый тик: HP += regen * BATTLE_TICK_INTERVAL) ---
     MIN_DAMAGE = 1000

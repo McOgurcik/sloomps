@@ -12,8 +12,21 @@ default battle_victory = False
 default battle_log = []
 default last_enemy = None
 
+default shop_tab = "upgrades"
+default egg_roll_active = False
+default egg_roll_candidates = []
+default egg_roll_index = 0
+default egg_roll_spins_left = 0
+default egg_roll_final = None
+default egg_roll_egg = None
+
 default sloomp_collection = []
 default current_sloomp = None
+default player_relics = []
+default current_relic_choices = []
+default battle_player_attack_count = 0
+default battle_enemy_stunned_until = 0.0
+default guardian_angel_used = False
 
 default persistent.gold = 0
 default persistent.shop_bonuses = {}
@@ -39,6 +52,11 @@ label need_first_sloomp:
 label after_choice:
     jump start_battle
 
+label after_boss_sloomp_then_relic:
+    $ current_relic_choices = generate_relic_choices(3)
+    call screen choose_relic
+    jump start_battle
+
 label after_choice_battle:
     jump start_battle
 
@@ -61,6 +79,9 @@ label start_battle:
     $ last_enemy_attack_time = 0.0
     $ hit_effect_target = None
     $ hit_effect_type = None
+    $ battle_player_attack_count = 0
+    $ battle_enemy_stunned_until = 0.0
+    $ guardian_angel_used = False
     call screen battle_animation
     if battle_aborted:
         jump after_battle
@@ -68,17 +89,19 @@ label start_battle:
 
 label show_battle_result:
     if battle_victory:
+        $ was_boss_wave = (wave % BOSS_WAVE_EVERY == 0 and wave >= BOSS_WAVE_EVERY)
         $ exp_gain = EXP_PER_WAVE_BASE + wave * EXP_PER_WAVE_MULT
         $ current_sloomp.add_exp(exp_gain)
         $ gold_earned = give_gold_for_wave(wave)
         $ persistent.gold += gold_earned
         $ wave += 1
         $ persistent.wave = wave
-        if wave % 10 == 0:
+        if was_boss_wave:
             $ boss_choices = [generate_sloomp(SLOOMP_CHOICE_LEVEL) for _ in range(3)]
-            call screen choose_sloomp("Выбери нового хлюпа (волна 10)", boss_choices, after_battle=True)
+            call screen choose_sloomp("Выбери нового хлюпа (после босса)", boss_choices, after_battle=True)
         else:
-            $ rerolls_left = REROLLS_PER_RUN
+            if rerolls_left <= 0:
+                $ rerolls_left = REROLLS_PER_RUN
             $ current_upgrade_choices = generate_upgrade_options(UPGRADE_CHOICES_COUNT, exclude_stats=None)
             call screen choose_upgrade
     else:
@@ -88,6 +111,8 @@ label show_battle_result:
             $ current_sloomp = sloomp_collection[0]
         else:
             $ current_sloomp = None
+        $ player_relics = []
+        $ guardian_angel_used = False
         $ sync_sloomp_to_persistent()
         $ persistent.in_run = False
         $ wave = WAVE_START

@@ -34,6 +34,35 @@ init -1 python:
         level = max(1, wave)
         is_boss = (wave % getattr(store, "BOSS_WAVE_EVERY", 10)) == 0 and wave >= getattr(store, "BOSS_WAVE_EVERY", 10)
         mult = getattr(store, "BOSS_STAT_MULT", 1.8) if is_boss else 1.0
+        
+        # Выбираем тип врага
+        enemy_types = getattr(store, "BOSS_ENEMY_TYPES", []) if is_boss else getattr(store, "ENEMY_TYPES", [])
+        if not enemy_types:
+            # Fallback на старую логику
+            names = ["Гнилой слизень", "Колючий черт", "Огненный шар", "Ледяная кроха", "Каменный голем"]
+            boss_names = ["Повелитель слизней", "Демон битвы", "Ледяной титан", "Огненный владыка", "Каменный страж"]
+            name = (random.choice(boss_names) if is_boss else random.choice(names)) + " (волна " + str(wave) + ")"
+            img_list = getattr(store, "BOSS_IMAGES", store.ENEMY_IMAGES) if is_boss else store.ENEMY_IMAGES
+            image = random.choice(img_list) if img_list else store.ENEMY_IMAGES[0]
+            base_stats = {
+                "hp": int(_enemy_stat(wave, "hp") * mult),
+                "defense": int(_enemy_stat(wave, "defense") * mult),
+                "attack_speed": max(store.ATTACK_SPEED_MIN, _enemy_stat(wave, "attack_speed") * mult),
+                "attack_power": int(_enemy_stat(wave, "attack_power") * mult),
+                "crit_chance": min(1.0, _enemy_stat(wave, "crit_chance") * mult),
+                "crit_damage": _enemy_stat(wave, "crit_damage") * mult,
+                "vampirism": 0.0,
+                "accuracy": min(1.0, _enemy_stat(wave, "accuracy") * mult),
+                "evasion": min(1.0, _enemy_stat(wave, "evasion") * mult),
+                "regen": int(_enemy_stat(wave, "regen") * mult),
+            }
+            base_stats = _apply_stat_caps(base_stats)
+            return store.Enemy(name, level, base_stats, image)
+        
+        enemy_type = random.choice(enemy_types)
+        type_mults = enemy_type.get("stat_multipliers", {})
+        
+        # Базовые статы без множителей типа
         base_stats = {
             "hp": int(_enemy_stat(wave, "hp") * mult),
             "defense": int(_enemy_stat(wave, "defense") * mult),
@@ -46,12 +75,20 @@ init -1 python:
             "evasion": min(1.0, _enemy_stat(wave, "evasion") * mult),
             "regen": int(_enemy_stat(wave, "regen") * mult),
         }
+        
+        # Применяем множители типа
+        for stat_key, type_mult in type_mults.items():
+            if stat_key in base_stats:
+                base_stats[stat_key] *= type_mult
+        
+        # Целочисленные статы для отображения и боя
+        for key in ("hp", "defense", "attack_power", "regen"):
+            if key in base_stats:
+                base_stats[key] = int(base_stats[key])
+        
         base_stats = _apply_stat_caps(base_stats)
-        names = ["Гнилой слизень", "Колючий черт", "Огненный шар", "Ледяная кроха", "Каменный голем"]
-        boss_names = ["Повелитель слизней", "Демон битвы", "Ледяной титан", "Огненный владыка", "Каменный страж"]
-        name = (random.choice(boss_names) if is_boss else random.choice(names)) + " (волна " + str(wave) + ")"
-        img_list = getattr(store, "BOSS_IMAGES", store.ENEMY_IMAGES) if is_boss else store.ENEMY_IMAGES
-        image = random.choice(img_list) if img_list else store.ENEMY_IMAGES[0]
+        name = enemy_type.get("name", "Враг") + " (волна " + str(wave) + ")"
+        image = enemy_type.get("image", store.ENEMY_IMAGES[0] if hasattr(store, "ENEMY_IMAGES") else "images/enemies/enemy1.png")
         return store.Enemy(name, level, base_stats, image)
 
     def _sloomp_base_stats(level):
@@ -109,21 +146,22 @@ init -1 python:
             chosen[i] = {
                 "stat": None,
                 "type": "reroll",
-                "name": "+1 реролл",
-                "value": 1,
-                "description": "Добавляет 1 реролл на выбор улучшений после волны.",
+                "name": "+2 реролла",
+                "value": 2,
+                "description": "Добавляет 2 реролла на выбор улучшений после волн.",
             }
         return chosen
 
     def apply_upgrade(upgrade):
         if upgrade.get("type") == "reroll":
             store.rerolls_left += upgrade.get("value", 1)
-            renpy.restart_interaction()
             return
         player = store.current_sloomp
         if not player or not upgrade.get("stat"):
             return
         player.bonus_stats[upgrade["stat"]] = player.bonus_stats.get(upgrade["stat"], 0) + upgrade["value"]
+        if hasattr(player, "upgrade_counts"):
+            player.upgrade_counts[upgrade["stat"]] = player.upgrade_counts.get(upgrade["stat"], 0) + 1
         player.final_stats = player.calc_final_stats()
         player.current_hp = min(player.current_hp, player.final_stats["hp"])
         player.current_hp = max(player.current_hp, 0)
@@ -160,6 +198,8 @@ init -1 python:
     def reset_game():
         store.sloomp_collection = []
         store.current_sloomp = None
+        store.player_relics = []
+        store.guardian_angel_used = False
         persistent.sloomp_data = []
         persistent.current_sloomp_index = None
         persistent.gold = 0

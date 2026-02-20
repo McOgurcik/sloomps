@@ -1,29 +1,44 @@
-2026-02-20 00:48:51 UTC
+2026-02-20 21:41:45 UTC
 Windows-11-10.0.22631-SP0
 Ren'Py 8.5.2.26010301
 
-Early init took 31 ms
-Loading error handling took 89 ms
-Loading script took 537 ms
-Loading save slot metadata took 12 ms
+Early init took 32 ms
+Loading error handling took 15 ms
+Loading script took 243 ms
+Loading save slot metadata took 13 ms
 Loading persistent took 0 ms
-Running init code took 77 ms
-Loading analysis data took 0 ms
-Analyze and compile ATL took 2 ms
+Running init code took 28 ms
+Loading analysis data took 5 ms
+Analyze and compile ATL took 1 ms
 Reloading save slot metadata took 4 ms
 Backing up script files to 'C:\\Users\\Администратор\\AppData\\Roaming/RenPy/backups\\sloomps':
-Dump and make backups took 31 ms
+Dump and make backups took 35 ms
 Cleaning cache took 0 ms
-Making clean stores took 0 ms
-Initial gc took 26 ms
+Making clean stores took 1 ms
+Initial gc took 36 ms
 DPI scale factor: 1.000000
 nvdrs: Loaded, about to disable thread optimizations.
 nvdrs: b"Couldn't load nvlib." (can be ignored)
-Creating interface object took 2 ms
+Creating interface object took 1 ms
 Init translation took 0 ms
-Cleaning stores took 1 ms
+Cleaning stores took 0 ms
 Load screen analysis took 0 ms
-Analyze screens took 25 ms
-Save screen analysis took 8 ms
+Analyze screens took 17 ms
+Save screen analysis took 14 ms
 Save pyanalysis took 4 ms
-Save bytecode took 0 ms
+Save bytecode took 19 ms
+Running _start took 1 ms
+Interface start took 171 ms
+
+Initializing gl2 renderer:
+primary display bounds: (0, 0, 1920, 1080)
+swap interval: 1 frames
+Windowed mode.
+Vendor: 'ATI Technologies Inc.'
+Renderer: 'AMD Radeon RX 6700 XT'
+Version: '4.6.0 Compatibility Profile Context 24.5.1.240502'
+Display Info: <Info({'bitsize': 32, 'bytesize': 4, 'masks': (16711680, 65280, 255, 0), 'shifts': (16, 8, 0, 0), 'losses': (0, 0, 0, 8), 'current_w': 1920, 'current_h': 1080, 'refresh_rate': 60, 'hw': False, 'wm': True, 'video_mem': 268435456, 'blit_hw': False, 'blit_hw_CC': False, 'blit_hw_A': False, 'blit_sw': False, 'blit_sw_CC': False, 'blit_sw_A': False})>
+Screen sizes: virtual=(1920, 1080) physical=(1920, 1009) drawable=(1920, 1009)
+Maximum texture size: 4096x4096
+Screen sizes: virtual=(1920, 1080) physical=(1920, 1009) drawable=(1920, 1009)
+Maximum texture size: 4096x4096
