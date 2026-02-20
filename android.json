@@ -1,0 +1,24 @@
+{
+    "expansion": false,
+    "google_play_key": null,
+    "google_play_salt": null,
+    "heap_size": "3",
+    "icon_name": "\u0411\u043e\u0435\u0432\u044b\u0435 \u0425\u043b\u044e\u043f\u044b",
+    "include_pil": false,
+    "include_sqlite": false,
+    "layout": null,
+    "name": "\u0411\u043e\u0435\u0432\u044b\u0435 \u0425\u043b\u044e\u043f\u044b",
+    "numeric_version": 1,
+    "orientation": "sensorLandscape",
+    "package": "com.mcogurcik.sloomps",
+    "permissions": [
+        "VIBRATE",
+        "INTERNET"
+    ],
+    "source": false,
+    "store": "none",
+    "update_always": true,
+    "update_icons": true,
+    "update_keystores": true,
+    "version": "1.0"
+}
