@@ -9,7 +9,8 @@ init -2 python:
     # --- Волны и прогресс ---
     WAVE_START = 1
     GOLD_BASE_PER_WAVE = 5
-    GOLD_PER_WAVE = 3
+    GOLD_PER_WAVE = 5
+    GOLD_POWER_EXPONENT = 0.85   # медленный степенной рост после 30 волны
     EXP_PER_WAVE_BASE = 8
     EXP_PER_WAVE_MULT = 2
 
@@ -97,8 +98,13 @@ init -2 python:
         "crit_chance": 1.06, "crit_damage": 1.065, "vampirism": 1.0,
         "accuracy": 1.055, "evasion": 1.05, "regen": 1.07,
     }
-    BOSS_STAT_MULT = 1.75
+    BOSS_STAT_MULT = 1.25
     BOSS_WAVE_EVERY = 10
+
+    # --- Управление отображением хлюпов ---
+    # Если True, используется новая система спрайтов из images/new_full/{form}_{color}_{face}.png
+    # При False используется старая система наложения базового тела и лиц.
+    USE_NEW_SLOOMP_SPRITES = True
 
     # --- Особенности хлюпов ---
     FEATURE_LEVELS = [
@@ -110,6 +116,7 @@ init -2 python:
         ("mask", 30, 0.2),
         ("weapon", 40, 0.18),
         ("aura", 50, 0.12),
+        ("ally", 1, 0.0),
     ]
     SLOOMP_CHOICE_LEVEL = 1
     BOSS_SLOOMP_LEVEL_BONUS = 0
@@ -141,69 +148,81 @@ init -2 python:
         "accuracy": 0.02, "evasion": 0.02, "regen": 100,
     }
 
-    # --- Яйца хлюпов (кейсы с разной редкостью) ---
+    # --- Яйца хлюпов (все хлюпы из яиц — 1 уровень; вероятности появления FEATURE) ---
     EGG_TYPES = [
         {
             "id": "common",
             "name": "Простое яйцо",
-            "description": "Недорогое яйцо, даёт хлюпов начального уровня с 2–4 особенностями.",
-            "price": 60,
-            "level": SLOOMP_CHOICE_LEVEL + 10,
-            "level_spread": 2,
+            "description": "Недорогое яйцо, даёт хлюпов с 2–4 особенностями.",
+            "price": 200,
             "roll_count": 10,
+            "feature_chances": {
+                "color": 1.0, "form": 1.0, "face": 1.0,
+                "hat": 0.15, "clothes": 0.08, "mask": 0.004,
+                "weapon": 0.003, "aura": 0.002,
+                "ally": 0.0,
+            },
         },
         {
             "id": "rare",
             "name": "Редкое яйцо",
-            "description": "Хлюпы выше уровнем и с большим количеством особенностей.",
-            "price": 150,
-            "level": SLOOMP_CHOICE_LEVEL + 30,
-            "level_spread": 4,
+            "description": "Хлюпы с большим количеством особенностей.",
+            "price": 1000,
             "roll_count": 12,
+            "feature_chances": {
+                "color": 1.0, "form": 1.0, "face": 1.0,
+                "hat": 0.5, "clothes": 0.15, "mask": 0.05,
+                "weapon": 0.5, "aura": 0.01,
+                "ally": 0.0,
+            },
         },
         {
             "id": "mythic",
             "name": "Мифическое яйцо",
             "description": "Очень редкие хлюпы с максимальным числом особенностей.",
-            "price": 320,
-            "level": SLOOMP_CHOICE_LEVEL + 50,
-            "level_spread": 5,
+            "price": 10000,
             "roll_count": 15,
+            "feature_chances": {
+                "color": 1.0, "form": 1.0, "face": 1.0,
+                "hat": 0.85, "clothes": 0.75, "mask": 0.65,
+                "weapon": 0.6, "aura": 0.1,
+                "ally": 0.0,
+            },
         },
     ]
     
     # --- Типы врагов ---
     ENEMY_TYPES = [
-        {
-            "id": "slime",
-            "name": "Гнилой слизень",
-            "image": "images/enemies/enemy1.png",
-            "stat_multipliers": {
-                "hp": 1.0, "defense": 1.0, "attack_speed": 1.0, "attack_power": 1.0,
-                "crit_chance": 1.0, "crit_damage": 1.0, "vampirism": 1.0,
-                "accuracy": 1.0, "evasion": 1.0, "regen": 1.0,
-            },
-        },
-        {
-            "id": "spike",
-            "name": "Колючий черт",
-            "image": "images/enemies/enemy2.png",
-            "stat_multipliers": {
-                "hp": 0.9, "defense": 1.1, "attack_speed": 1.1, "attack_power": 1.0,
-                "crit_chance": 1.2, "crit_damage": 1.0, "vampirism": 1.0,
-                "accuracy": 1.0, "evasion": 0.9, "regen": 1.0,
-            },
-        },
-        {
-            "id": "fire",
-            "name": "Огненный шар",
-            "image": "images/enemies/enemy1.png",
-            "stat_multipliers": {
-                "hp": 0.95, "defense": 0.9, "attack_speed": 1.0, "attack_power": 1.15,
-                "crit_chance": 1.0, "crit_damage": 1.1, "vampirism": 1.0,
-                "accuracy": 1.0, "evasion": 1.0, "regen": 0.5,
-            },
-        },
+        # {
+        #     "id": "slime",
+        #     "name": "Гнилой слизень",
+        #     "image": "images/enemies/enemy1.png",
+        #     "stat_multipliers": {
+        #         "hp": 1.0, "defense": 1.0, "attack_speed": 1.0, "attack_power": 1.0,
+        #         "crit_chance": 1.0, "crit_damage": 1.0, "vampirism": 1.0,
+        #         "accuracy": 1.0, "evasion": 1.0, "regen": 1.0,
+        #     },
+        # },
+        # {
+        #     "id": "spike",
+        #     "name": "Колючий черт",
+        #     "image": "images/enemies/enemy2.png",
+        #     "stat_multipliers": {
+        #         "hp": 0.9, "defense": 1.1, "attack_speed": 1.1, "attack_power": 1.0,
+        #         "crit_chance": 1.2, "crit_damage": 1.0, "vampirism": 1.0,
+        #         "accuracy": 1.0, "evasion": 0.9, "regen": 1.0,
+        #     },
+        # },
+        # {
+        #     "id": "fire",
+        #     "name": "Огненный шар",
+        #     "image": "images/enemies/enemy1.png",
+        #     "stat_multipliers": {
+        #         "hp": 0.95, "defense": 0.9, "attack_speed": 1.0, "attack_power": 1.15,
+        #         "crit_chance": 1.0, "crit_damage": 1.1, "vampirism": 1.0,
+        #         "accuracy": 1.0, "evasion": 1.0, "regen": 0.5,
+        #     },
+        # },
         {
             "id": "ice",
             "name": "Ледяная кроха",
@@ -226,11 +245,16 @@ init -2 python:
         },
     ]
     
+    # --- Типы боссов ---
+    # Каждый босс привязан к конкретной волне появления (wave).
+    # Если игрок дошёл дальше, чем определено боссов, для следующей босс-волны
+    # будет случайно выбран один из уже встреченных боссов.
     BOSS_ENEMY_TYPES = [
         {
             "id": "boss_slime",
             "name": "Повелитель слизней",
             "image": "images/enemies/boss1.png",
+            "wave": 10,
             "stat_multipliers": {
                 "hp": 1.0, "defense": 1.0, "attack_speed": 1.0, "attack_power": 1.0,
                 "crit_chance": 1.0, "crit_damage": 1.0, "vampirism": 1.0,
@@ -241,6 +265,7 @@ init -2 python:
             "id": "boss_demon",
             "name": "Демон битвы",
             "image": "images/enemies/boss1.png",
+            "wave": 20,
             "stat_multipliers": {
                 "hp": 0.95, "defense": 0.9, "attack_speed": 1.2, "attack_power": 1.15,
                 "crit_chance": 1.3, "crit_damage": 1.2, "vampirism": 1.0,
@@ -251,6 +276,7 @@ init -2 python:
             "id": "boss_ice",
             "name": "Ледяной титан",
             "image": "images/enemies/boss1.png",
+            "wave": 30,
             "stat_multipliers": {
                 "hp": 1.2, "defense": 1.3, "attack_speed": 0.8, "attack_power": 0.95,
                 "crit_chance": 0.9, "crit_damage": 1.0, "vampirism": 1.0,
@@ -261,6 +287,7 @@ init -2 python:
             "id": "boss_fire",
             "name": "Огненный владыка",
             "image": "images/enemies/boss1.png",
+            "wave": 40,
             "stat_multipliers": {
                 "hp": 0.9, "defense": 0.85, "attack_speed": 1.1, "attack_power": 1.25,
                 "crit_chance": 1.1, "crit_damage": 1.3, "vampirism": 1.0,
@@ -271,6 +298,7 @@ init -2 python:
             "id": "boss_stone",
             "name": "Каменный страж",
             "image": "images/enemies/boss1.png",
+            "wave": 50,
             "stat_multipliers": {
                 "hp": 1.4, "defense": 1.4, "attack_speed": 0.7, "attack_power": 1.1,
                 "crit_chance": 0.85, "crit_damage": 1.0, "vampirism": 1.0,
@@ -278,6 +306,28 @@ init -2 python:
             },
         },
     ]
+
+    # --- Фоны боя по диапазонам волн ---
+    # Структура: (wave_from, wave_to, image, player_pos, enemy_pos)
+    # player_pos и enemy_pos — кортежи (x, y) для размещения хлюпа и врага.
+    # Сейчас все диапазоны указывают на один и тот же фон — вы можете
+    # заменить пути на разные файлы, когда добавите новые изображения.
+    BATTLE_BACKGROUND_MAP = [
+        (1, 9, "images/gui/bg_battle_1.png", (400, 600), (1200, 600)),
+        (10, 19, "images/gui/bg_battle_2.png", (400, 600), (1200, 600)),
+        (20, 29, "images/gui/bg_battle_2.png", (400, 600), (1200, 600)),
+        (30, 39, "images/gui/battle_bg.png", (400, 300), (1200, 300)),
+        (40, 49, "images/gui/battle_bg.png", (400, 300), (1200, 300)),
+        (50, 59, "images/gui/battle_bg.png", (400, 300), (1200, 300)),
+    ]
+
+    # --- Спрайты ударов ---
+    # Для каждого типа удара задаётся список возможных спрайтов.
+    # Позже вы можете добавить сюда дополнительные варианты.
+    HIT_EFFECT_SPRITES = {
+        "normal": ["images/effects/hit_normal.png"],
+        "crit": ["images/effects/hit_crit.png"],
+    }
 
     # --- Бой (regen применяется каждый тик: HP += regen * BATTLE_TICK_INTERVAL) ---
     MIN_DAMAGE = 1000

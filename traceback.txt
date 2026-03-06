@@ -1,7 +1,7 @@
 ﻿I'm sorry, but an uncaught exception occurred.
 
 While running game code:
-Exception: To be persisted, <store.Sloomp object at 0x00000000088eef00> must support equality comparison.
+Exception: 'save1' is not a screen or a label.
 
 -- Full Traceback ------------------------------------------------------------
 
@@ -22,7 +22,7 @@ Traceback (most recent call last):
   File "renpy/ui.py", line 306, in interact
     rv = renpy.game.interface.interact(roll_forward=roll_forward, **kwargs)
          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "renpy/display/core.py", line 2154, in interact
+  File "renpy/display/core.py", line 2156, in interact
     repeat, rv = self.interact_core(
                  ~~~~~~~~~~~~~~~~~~^
         preloads=preloads,
@@ -32,26 +32,47 @@ Traceback (most recent call last):
         ^^^^^^^^^
     )
     ^
-  File "renpy/display/core.py", line 2996, in interact_core
-    self.idle_frame(expensive)
-    ~~~~~~~~~~~~~~~^^^^^^^^^^^
-  File "renpy/display/core.py", line 2312, in idle_frame
-    renpy.persistent.check_update()
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
-  File "renpy/persistent.py", line 425, in check_update
-    update()
-    ~~~~~~^^
-  File "renpy/persistent.py", line 456, in update
-    merge(other)
-    ~~~~~^^^^^^^
-  File "renpy/persistent.py", line 405, in merge
-    backup[f] = safe_deepcopy(val, f)
-                ~~~~~~~~~~~~~^^^^^^^^
-  File "renpy/persistent.py", line 171, in safe_deepcopy
-    raise Exception("To be persisted, %r must support equality comparison." % o)
-Exception: To be persisted, <store.Sloomp object at 0x00000000088eef00> must support equality comparison.
+  File "renpy/display/core.py", line 3250, in interact_core
+    rv = root_widget.event(ev, x, y, 0)
+         ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "renpy/display/layout.py", line 1281, in event
+    rv = i.event(ev, x - xo, y - yo, cst)
+         ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "renpy/display/layout.py", line 1281, in event
+    rv = i.event(ev, x - xo, y - yo, cst)
+         ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "renpy/display/layout.py", line 1281, in event
+    rv = i.event(ev, x - xo, y - yo, cst)
+         ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "renpy/display/screen.py", line 805, in event
+    rv = self.child.event(ev, x, y, st)
+         ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+  File "renpy/display/layout.py", line 1281, in event
+    rv = i.event(ev, x - xo, y - yo, cst)
+         ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "renpy/display/layout.py", line 1510, in event
+    rv = super(Window, self).event(ev, x, y, st)
+         ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+  File "renpy/display/layout.py", line 273, in event
+    rv = d.event(ev, x - xo, y - yo, st)
+         ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+  File "renpy/display/layout.py", line 1281, in event
+    rv = i.event(ev, x - xo, y - yo, cst)
+         ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "renpy/display/behavior.py", line 1185, in event
+    return handle_click(self.clicked)
+           ~~~~~~~~~~~~^^^^^^^^^^^^^^
+  File "renpy/display/behavior.py", line 1107, in handle_click
+    rv = run(action)
+         ~~~^^^^^^^^
+  File "renpy/display/behavior.py", line 411, in run
+    return action(*args, **kwargs)
+           ~~~~~~^^^^^^^^^^^^^^^^^
+  File "renpy/common/00action_menu.rpy", line 117, in __call__
+    raise Exception("%r is not a screen or a label." % orig_screen)
+Exception: 'save1' is not a screen or a label.
 
 Windows-11-10.0.22631-SP0 AMD64
-Ren'Py 8.5.2.26010301
-Боевые Хлюпы 1.0
-Fri Feb 20 02:31:37 2026
+Ren'Py 8.5.3.26030501+nightly
+Боевые Хлюпы 1.3
+Fri Mar  6 03:06:04 2026

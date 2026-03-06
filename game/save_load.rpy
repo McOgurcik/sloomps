@@ -1,8 +1,20 @@
-# save_load.rpy — сохранение/загрузка без хранения объектов Sloomp в persistent
-# Коллекция хранится как persistent.sloomp_data (список dict), current_sloomp_index (int).
-# В игре используются store.sloomp_collection и store.current_sloomp (восстанавливаются при загрузке).
+# save_load.rpy — сохранение/загрузка
+# Сохранение в слот: при открытии экрана save копируем persistent -> store; слот сохраняет store.
+# После загрузки слота: callback копирует store -> persistent, чтобы меню и магазин видели актуальные данные.
 
 init python:
+    def _after_load_sync():
+        """После загрузки слота синхронизировать persistent из store."""
+        try:
+            persistent.wave = store.wave
+            persistent.in_run = True
+            persistent.gold = getattr(store, "gold", 0)
+            persistent.shop_bonuses = dict(getattr(store, "shop_bonuses", {}))
+            sync_sloomp_to_persistent()
+        except Exception:
+            pass
+
+    config.after_load_callbacks = [_after_load_sync]
     def load_sloomp_from_persistent():
         data = getattr(persistent, "sloomp_data", None)
         if data is None:

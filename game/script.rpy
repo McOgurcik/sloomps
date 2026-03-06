@@ -27,6 +27,10 @@ default current_relic_choices = []
 default battle_player_attack_count = 0
 default battle_enemy_stunned_until = 0.0
 default guardian_angel_used = False
+default gold = 0
+default shop_bonuses = {}
+default battle_player_pos = (400, 300)
+default battle_enemy_pos = (1200, 300)
 
 default persistent.gold = 0
 default persistent.shop_bonuses = {}
@@ -41,6 +45,8 @@ label start:
         $ current_sloomp = sloomp_collection[0]
     if persistent.in_run:
         $ wave = persistent.wave
+    else:
+        $ rerolls_left = REROLLS_PER_RUN
     call screen main_menu
     return
 
@@ -54,7 +60,8 @@ label after_choice:
 
 label after_boss_sloomp_then_relic:
     $ current_relic_choices = generate_relic_choices(3)
-    call screen choose_relic
+    if current_relic_choices:
+        call screen choose_relic
     jump start_battle
 
 label after_choice_battle:
@@ -100,8 +107,6 @@ label show_battle_result:
             $ boss_choices = [generate_sloomp(SLOOMP_CHOICE_LEVEL) for _ in range(3)]
             call screen choose_sloomp("Выбери нового хлюпа (после босса)", boss_choices, after_battle=True)
         else:
-            if rerolls_left <= 0:
-                $ rerolls_left = REROLLS_PER_RUN
             $ current_upgrade_choices = generate_upgrade_options(UPGRADE_CHOICES_COUNT, exclude_stats=None)
             call screen choose_upgrade
     else:
@@ -113,6 +118,7 @@ label show_battle_result:
             $ current_sloomp = None
         $ player_relics = []
         $ guardian_angel_used = False
+        $ rerolls_left = REROLLS_PER_RUN
         $ sync_sloomp_to_persistent()
         $ persistent.in_run = False
         $ wave = WAVE_START

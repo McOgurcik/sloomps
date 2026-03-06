@@ -32,11 +32,30 @@ init -1 python:
 
     def generate_enemy(wave):
         level = max(1, wave)
-        is_boss = (wave % getattr(store, "BOSS_WAVE_EVERY", 10)) == 0 and wave >= getattr(store, "BOSS_WAVE_EVERY", 10)
+        boss_every = getattr(store, "BOSS_WAVE_EVERY", 10)
+        is_boss = (wave % boss_every) == 0 and wave >= boss_every
         mult = getattr(store, "BOSS_STAT_MULT", 1.8) if is_boss else 1.0
         
         # Выбираем тип врага
-        enemy_types = getattr(store, "BOSS_ENEMY_TYPES", []) if is_boss else getattr(store, "ENEMY_TYPES", [])
+        if is_boss:
+            boss_types = list(getattr(store, "BOSS_ENEMY_TYPES", []))
+            if boss_types:
+                # Сначала пробуем найти босса, привязанного к текущей волне.
+                exact = [b for b in boss_types if b.get("wave") == wave]
+                if exact:
+                    enemy_type = exact[0]
+                    enemy_types = [enemy_type]
+                else:
+                    # Если все боссы уже были показаны (игрок ушёл дальше),
+                    # выбираем случайного из тех, у кого wave <= текущей волны.
+                    seen = [b for b in boss_types if b.get("wave") and b.get("wave") <= wave]
+                    pool = seen or boss_types
+                    enemy_type = random.choice(pool)
+                    enemy_types = [enemy_type]
+            else:
+                enemy_types = []
+        else:
+            enemy_types = getattr(store, "ENEMY_TYPES", [])
         if not enemy_types:
             # Fallback на старую логику
             names = ["Гнилой слизень", "Колючий черт", "Огненный шар", "Ледяная кроха", "Каменный голем"]
@@ -110,14 +129,39 @@ init -1 python:
                 feature_types.append(ftype)
         if not feature_types:
             feature_types = ["color", "form", "face"]
+        features = _pick_features_with_rarity(feature_types)
+        name_parts = [f["display_name"] for f in features if f["type"] in ("color", "form", "face")]
+        if not name_parts:
+            name_parts = ["Хлюп"]
+        name = " ".join(name_parts)
+        return store.Sloomp(name, level, base_stats, features)
+
+    def _pick_features_with_rarity(feature_types):
+        """Выбирает особенности с учётом внутренней редкости (weight)"""
         features = []
         for ftype in feature_types:
             options = store.FEATURE_DB.get(ftype, {})
             if not options:
                 continue
-            chosen = random.choice(list(options.values())).copy()
+            opts_list = list(options.values())
+            weights = [opt.get("rarity", 1.0) for opt in opts_list]
+            chosen = random.choices(opts_list, weights=weights, k=1)[0].copy()
             chosen["type"] = ftype
             features.append(chosen)
+        return features
+
+    def generate_sloomp_for_egg(egg):
+        """Генерирует хлюпа 1 уровня для яйца с вероятностями feature_chances"""
+        level = 1
+        base_stats = _sloomp_base_stats(level)
+        chances = egg.get("feature_chances", {})
+        feature_types = []
+        for ftype, chance in chances.items():
+            if random.random() <= chance:
+                feature_types.append(ftype)
+        if not feature_types:
+            feature_types = ["color", "form", "face"]
+        features = _pick_features_with_rarity(feature_types)
         name_parts = [f["display_name"] for f in features if f["type"] in ("color", "form", "face")]
         if not name_parts:
             name_parts = ["Хлюп"]
@@ -170,7 +214,14 @@ init -1 python:
     def give_gold_for_wave(wave):
         base = getattr(store, "GOLD_BASE_PER_WAVE", 5)
         per = getattr(store, "GOLD_PER_WAVE", 3)
-        return base + wave * per
+        if wave <= 30:
+            return base + wave * per
+        else:
+            # значение на 30-й волне
+            base_30 = base + 30 * per
+            exponent = getattr(store, "GOLD_POWER_EXPONENT", 0.85)
+            # степенной рост от 30-й волны
+            return int(base_30 * (wave / 30) ** exponent)
 
     def reset_run():
         store.wave = store.WAVE_START
@@ -200,13 +251,13 @@ init -1 python:
         store.current_sloomp = None
         store.player_relics = []
         store.guardian_angel_used = False
+        store.rerolls_left = store.REROLLS_PER_RUN
         persistent.sloomp_data = []
         persistent.current_sloomp_index = None
         persistent.gold = 0
         persistent.in_run = False
         persistent.wave = store.WAVE_START
-        if not hasattr(persistent, "shop_bonuses"):
-            persistent.shop_bonuses = {}
+        persistent.shop_bonuses = {}
         store.wave = store.WAVE_START
         store.battle_aborted = False
         store.battle_active = False

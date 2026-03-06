@@ -50,8 +50,13 @@ init -1 python:
     }
     
     def generate_relic_choices(count=3):
-        """Генерирует случайные реликвии для выбора"""
-        available = list(RELICS_DB.keys())
+        """Генерирует случайные реликвии для выбора (исключая уже имеющиеся)"""
+        owned = []
+        if hasattr(store, "player_relics") and store.player_relics:
+            owned = [r.get("id") if isinstance(r, dict) else r for r in store.player_relics]
+        available = [rid for rid in RELICS_DB.keys() if rid not in owned]
+        if not available:
+            return []
         chosen = random.sample(available, min(count, len(available)))
         return [RELICS_DB[rid].copy() for rid in chosen]
     
@@ -70,6 +75,7 @@ init -1 python:
         if "sneaky_strike" in relic_ids:
             player.final_stats["crit_chance"] = min(player.final_stats.get("crit_chance", 0), 0.25)
             player.final_stats["crit_damage"] = min(player.final_stats.get("crit_damage", 1.0), 1.4)
+            player.final_stats["attack_speed"] = min(player.final_stats.get("attack_speed", 0), 0.5)
         
         # Теневые крылья - снижает защиту на 15%
         if "shadow_wings" in relic_ids:
